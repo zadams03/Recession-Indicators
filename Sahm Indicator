@@ -1,0 +1,66 @@
+import pandas as pd
+from fredapi import Fred
+import matplotlib.pyplot as plt
+
+# Initialize Fred API with API key
+fred = Fred(api_key='0573015941b35aaca14ef12377c6aa98')
+
+# Fetching the unemployment rate (UNRATE)
+unrate_data = fred.get_series('UNRATE')
+
+# Convert the data to a DataFrame
+unrate_df = pd.DataFrame(unrate_data, columns=['UNRATE'])
+
+# Ensure the index is a DateTimeIndex
+unrate_df.index = pd.to_datetime(unrate_df.index)
+
+# Calculate the 3-month moving average
+unrate_df['3MA_UNRATE'] = unrate_df['UNRATE'].rolling(window=3).mean()
+
+# Initialize the Sahm Indicator column with NaNs
+unrate_df['Sahm_Indicator'] = pd.NA
+
+# Define a function to calculate the Sahm Recession Indicator
+def sahm_indicator(df):
+    # Rolling window size for the previous 12 months (i.e., 12 months for a monthly dataset)
+    rolling_window = 12
+    
+    # Calculate the Sahm Indicator
+    for i in range(len(df)):
+        if i >= rolling_window:
+            # Calculate the minimum of the 3-month moving averages from the previous 12 months
+            min_3ma_prev_12m = df['3MA_UNRATE'].iloc[i-rolling_window:i].min()
+            if pd.notna(min_3ma_prev_12m):  # Check if min_3ma_prev_12m is not NA
+                sahm_value = df['3MA_UNRATE'].iloc[i] - (min_3ma_prev_12m + 0.50)
+                df['Sahm_Indicator'].iloc[i] = sahm_value
+    return df
+
+# Apply the Sahm Indicator function
+unrate_df = sahm_indicator(unrate_df)
+
+# Drop rows with NA values in 'Sahm_Indicator'
+unrate_df = unrate_df.dropna(subset=['Sahm_Indicator'])
+
+
+# Plot the Sahm Recession Indicator
+plt.figure(figsize=(12, 6))
+plt.plot(unrate_df.index, unrate_df['Sahm_Indicator'], label='Sahm Indicator', color='blue')
+plt.axhline(0, color='red', linestyle='--', label='Recession Threshold (0.50%)')
+plt.title('Sahm Recession Indicator')
+plt.xlabel('Date')
+plt.ylabel('Sahm Indicator (%)')
+plt.legend()
+plt.grid(True)  # Add grid for better readability
+plt.show()
+latest_sahm = unrate_df['Sahm_Indicator'].iloc[-1]
+print(f"Latest Sahm Indicator Value: {latest_sahm}")
+
+# Plot the Sahm Indicator
+plt.figure(figsize=(10, 6))
+plt.plot(unrate_df.index, unrate_df['Sahm_Indicator'], label='Sahm Indicator', color='blue')
+plt.axhline(0.50, color='red', linestyle='--', label='Recession Threshold (0.50%)')
+plt.title('Sahm Rule Recession Indicator')
+plt.xlabel('Date')
+plt.ylabel('Sahm Indicator (%)')
+plt.legend()
+plt.show()
