@@ -52,15 +52,3 @@ plt.ylabel('Sahm Indicator (%)')
 plt.legend()
 plt.grid(True)  # Add grid for better readability
 plt.show()
-latest_sahm = unrate_df['Sahm_Indicator'].iloc[-1]
-print(f"Latest Sahm Indicator Value: {latest_sahm}")
-
-# Plot the Sahm Indicator
-plt.figure(figsize=(10, 6))
-plt.plot(unrate_df.index, unrate_df['Sahm_Indicator'], label='Sahm Indicator', color='blue')
-plt.axhline(0.50, color='red', linestyle='--', label='Recession Threshold (0.50%)')
-plt.title('Sahm Rule Recession Indicator')
-plt.xlabel('Date')
-plt.ylabel('Sahm Indicator (%)')
-plt.legend()
-plt.show()
